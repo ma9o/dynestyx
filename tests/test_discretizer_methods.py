@@ -4,6 +4,7 @@ import diffrax as dfx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import jax.scipy.linalg as jsp_linalg
 import numpyro.distributions as dist
 import pytest
 from numpyro.handlers import seed, trace
@@ -73,6 +74,23 @@ def _nonlinear_model() -> DynamicalModel:
             H=jnp.ones((1, 1)),
             R=jnp.eye(1),
         ),
+    )
+
+
+def _nonlinear_additive_model() -> DynamicalModel:
+    return DynamicalModel(
+        initial_condition=dist.MultivariateNormal(jnp.zeros(2), jnp.eye(2)),
+        state_evolution=ContinuousTimeStateEvolution(
+            drift=lambda x, u, t: jnp.array(
+                [
+                    -0.4 * x[0] + 0.25 * x[1] ** 2 + 0.3 * u[0] + 0.1 * t,
+                    0.2 * x[0] - 0.1 * x[1] - 0.2 * u[0],
+                ]
+            ),
+            diffusion=FullDiffusion(jnp.array([[0.3, 0.0], [0.1, 0.2]])),
+        ),
+        observation_model=LinearGaussianObservation(H=jnp.eye(2), R=jnp.eye(2)),
+        control_dim=1,
     )
 
 
@@ -396,6 +414,110 @@ def test_local_linearization_stiff_covariance_is_finite_in_float32():
 
     assert jnp.all(jnp.isfinite(transition.covariance_matrix))
     assert jnp.allclose(transition.covariance_matrix, 0.005, rtol=2e-5)
+
+
+def test_linearized_transition_parameters_match_configured_transition():
+    dynamics = _nonlinear_additive_model()
+    config = LocalLinearizationConfig(covariance_jitter=1e-8)
+    state = jnp.array([0.3, -0.6])
+    control = jnp.array([0.4])
+    previous_time = jnp.array(0.2)
+    time = jnp.array(0.65)
+
+    params = dsx.linearized_transition_parameters(
+        dynamics,
+        config,
+        linearization_state=state,
+        previous_control=control,
+        previous_time=previous_time,
+        time=time,
+    )
+    transition = dsx.discretize_dynamics(dynamics, config).state_evolution(
+        state,
+        control,
+        previous_time,
+        time,
+    )
+
+    expected_jacobian = jnp.array([[-0.4, 0.5 * state[1]], [0.2, -0.1]])
+    assert params.B is None
+    assert params.bias is not None
+    assert jnp.allclose(
+        params.A,
+        jsp_linalg.expm(expected_jacobian * (time - previous_time)),
+    )
+    assert jnp.allclose(params.A @ state + params.bias, transition.mean)
+    assert jnp.allclose(params.cov, transition.covariance_matrix)
+
+
+def test_linearized_transition_parameters_are_state_dependent_and_vmappable():
+    dynamics = _nonlinear_additive_model()
+    config = LocalLinearizationConfig()
+    states = jnp.array([[0.3, -0.6], [-0.2, 0.7]])
+    controls = jnp.array([[0.4], [-0.1]])
+    previous_times = jnp.array([0.1, 0.3])
+    times = jnp.array([0.45, 0.8])
+
+    def _parameters(state, control, previous_time, time):
+        return dsx.linearized_transition_parameters(
+            dynamics,
+            config,
+            linearization_state=state,
+            previous_control=control,
+            previous_time=previous_time,
+            time=time,
+        )
+
+    params = jax.vmap(_parameters)(states, controls, previous_times, times)
+
+    assert params.A.shape == (2, 2, 2)
+    assert params.B is None
+    assert params.bias is not None
+    assert params.bias.shape == (2, 2)
+    assert params.cov.shape == (2, 2, 2)
+    assert not jnp.allclose(params.A[0], params.A[1])
+
+
+def test_linearized_transition_parameters_reject_nonstochastic_models():
+    discrete = dsx.LTI_discrete(
+        A=jnp.eye(1),
+        Q=jnp.eye(1),
+        H=jnp.eye(1),
+        R=jnp.eye(1),
+    )
+    deterministic = DynamicalModel(
+        initial_condition=dist.MultivariateNormal(jnp.zeros(2), jnp.eye(2)),
+        state_evolution=_ode_state_evolution(),
+        observation_model=LinearGaussianObservation(H=jnp.eye(2), R=jnp.eye(2)),
+        control_dim=1,
+    )
+    config = LocalLinearizationConfig()
+
+    for dynamics, state, control in (
+        (discrete, jnp.zeros(1), None),
+        (deterministic, jnp.zeros(2), jnp.zeros(1)),
+    ):
+        with pytest.raises(TypeError, match="stochastic continuous-time"):
+            dsx.linearized_transition_parameters(
+                dynamics,
+                config,
+                linearization_state=state,
+                previous_control=control,
+                previous_time=0.0,
+                time=0.1,
+            )
+
+
+def test_linearized_transition_parameters_reject_state_dependent_diffusion():
+    with pytest.raises(TypeError, match="structurally constant additive diffusion"):
+        dsx.linearized_transition_parameters(
+            _nonlinear_model(),
+            LocalLinearizationConfig(),
+            linearization_state=jnp.array([0.2]),
+            previous_control=None,
+            previous_time=0.0,
+            time=0.1,
+        )
 
 
 @pytest.mark.parametrize(
