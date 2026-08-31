@@ -16,8 +16,8 @@ discrete_dynamics = dsx.discretize_dynamics(
 The returned model preserves the initial condition, observation model, control
 metadata, and initial time. Its state evolution is the interval transition
 selected by the discretizer configuration. This pure form is suitable for
-retaining and reusing the selected interval transition outside an
-effect-handler context.
+building reusable algorithm-facing objects such as
+`dsx.build_particle_operators(discrete_dynamics)`.
 
 ## Effect-handler form
 

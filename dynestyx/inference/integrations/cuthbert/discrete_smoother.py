@@ -30,6 +30,10 @@ from dynestyx.inference.integrations.cuthbert.discrete_filter import (
 from dynestyx.inference.integrations.utils import (
     squeeze_leading_singletons,
 )
+from dynestyx.inference.particle_operators import (
+    ParticleOperators,
+    build_particle_operators,
+)
 from dynestyx.inference.utils.distribution_utils import (
     _cholesky_state_sequence_to_dists,
 )
@@ -106,20 +110,26 @@ def _taylor_get_dynamics_log_density(dynamics: DynamicalModel):
     return get_dynamics_log_density
 
 
-def _pf_log_potential(dynamics: DynamicalModel):
+def _pf_log_potential(operators: ParticleOperators):
     def log_potential(x_prev, x, mi: CuthbertInputs):
         # Unlike the forward bootstrap filter, cuthbert's backward sampler
         # expects the joint transition-plus-observation potential.
-        transition = dynamics.state_evolution(
+        transition_log_prob = operators.transition_log_prob(
             x_prev,
-            mi.u_prev,
-            mi.time_prev,
-            mi.time,
+            x,
+            previous_control=mi.u_prev,
+            previous_time=mi.time_prev,
+            time=mi.time,
         )
-        edist = dynamics.observation_model(x, mi.u, mi.time)
+        observation_log_prob = operators.incremental_log_potential(
+            x,
+            observation=mi.y,
+            control=mi.u,
+            time=mi.time,
+        )
         return (
-            jnp.asarray(transition.log_prob(x)).sum()
-            + jnp.asarray(edist.log_prob(mi.y)).sum()
+            jnp.asarray(transition_log_prob).sum()
+            + jnp.asarray(observation_log_prob).sum()
         )
 
     return log_potential
@@ -226,8 +236,9 @@ def compute_cuthbert_smoother(
             if smoother_config.pf_n_smoother_particles is not None
             else int(smoother_config.n_particles)
         )
+        particle_operators = build_particle_operators(dynamics)
         smoother_obj = backward_sampler.build_smoother(
-            log_potential=_pf_log_potential(dynamics),
+            log_potential=_pf_log_potential(particle_operators),
             backward_sampling_fn=_pf_backward_sampling_fn(smoother_config),
             resampling_fn=_pf_resampling_fn(filter_kwargs),
             n_smoother_particles=n_smoother_particles,
