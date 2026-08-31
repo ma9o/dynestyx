@@ -23,7 +23,7 @@ type Control = Real[Array, " control_dim"] | Real[Array, ""] | None
 type Time = float | int | Real[Array, ""]
 
 
-class CompiledParticleTarget(eqx.Module):
+class ParticleOperators(eqx.Module):
     """Particle sampling and scoring operations for one discrete Dynestyx model.
 
     Algorithm choices such as particle count, resampling, and conditioning on a
@@ -180,7 +180,7 @@ class CompiledParticleTarget(eqx.Module):
         )
 
 
-def compile_particle_target(dynamics: DynamicalModel) -> CompiledParticleTarget:
+def compile_particle_operators(dynamics: DynamicalModel) -> ParticleOperators:
     """Compile a discrete Dynestyx model into backend-neutral particle operations.
 
     Raw continuous-time models require a consumer-selected discretization before
@@ -189,11 +189,11 @@ def compile_particle_target(dynamics: DynamicalModel) -> CompiledParticleTarget:
     """
     if dynamics.continuous_time:
         raise TypeError(
-            "compile_particle_target requires a discrete-time DynamicalModel. "
+            "compile_particle_operators requires a discrete-time DynamicalModel. "
             "Discretize continuous-time dynamics on the intended inference "
-            "lattice before compiling the particle target."
+            "lattice before compiling the particle operators."
         )
-    return CompiledParticleTarget(dynamics=dynamics)
+    return ParticleOperators(dynamics=dynamics)
 
 
-__all__ = ["CompiledParticleTarget", "compile_particle_target"]
+__all__ = ["ParticleOperators", "compile_particle_operators"]

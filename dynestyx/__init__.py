@@ -15,9 +15,9 @@ from dynestyx.inference.configs.simulator import (
 )
 from dynestyx.inference.filters import Filter
 from dynestyx.inference.latent.builder import LatentPathBuilder
-from dynestyx.inference.particle_target import (
-    CompiledParticleTarget,
-    compile_particle_target,
+from dynestyx.inference.particle_operators import (
+    ParticleOperators,
+    compile_particle_operators,
 )
 from dynestyx.inference.smoothers import Smoother
 from dynestyx.models import (
@@ -79,12 +79,12 @@ __all__ = [
     "Filter",
     "Evaluation",
     "LatentPathBuilder",
-    "CompiledParticleTarget",
+    "ParticleOperators",
     "MissingObservationMetadata",
     "Smoother",
     "flatten_draws",
     "condition",
-    "compile_particle_target",
+    "compile_particle_operators",
     "ConditionedResult",
     "EvaluationResult",
     "ObservationScoringConfig",

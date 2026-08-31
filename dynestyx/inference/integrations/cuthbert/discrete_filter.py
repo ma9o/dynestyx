@@ -29,7 +29,7 @@ from dynestyx.inference.configs.filter import (
 from dynestyx.inference.integrations.utils import (
     squeeze_leading_singletons,
 )
-from dynestyx.inference.particle_target import compile_particle_target
+from dynestyx.inference.particle_operators import compile_particle_operators
 from dynestyx.inference.utils.distribution_utils import (
     _cholesky_state_sequence_to_dists,
 )
@@ -444,17 +444,17 @@ def run_discrete_filter(
 def _cuthbert_filter_pf(dynamics: DynamicalModel, filter_kwargs: dict | None = None):
     if filter_kwargs is None:
         filter_kwargs = {}
-    target = compile_particle_target(dynamics)
+    operators = compile_particle_operators(dynamics)
 
     def init_sample(key, mi: CuthbertInputs):
-        return target.initial_sample(key)
+        return operators.initial_sample(key)
 
     def propagate_sample(key, x_prev, mi: CuthbertInputs):
         def _noop(key, x_prev, mi):
             return x_prev
 
         def _evolve(key, x_prev, mi):
-            return target.transition_sample(
+            return operators.transition_sample(
                 key,
                 x_prev,
                 previous_control=mi.u_prev,
@@ -465,7 +465,7 @@ def _cuthbert_filter_pf(dynamics: DynamicalModel, filter_kwargs: dict | None = N
         return jax.lax.cond(mi.is_first_step, _noop, _evolve, key, x_prev, mi)
 
     def log_potential(x_prev, x, mi: CuthbertInputs):
-        return target.incremental_log_potential(
+        return operators.incremental_log_potential(
             x,
             observation=mi.y,
             control=mi.u,
