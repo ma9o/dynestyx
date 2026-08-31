@@ -159,6 +159,80 @@ def test_euler_maruyama_loc_cov_batched_state_accepts_scalar_times():
     assert jnp.allclose(out["cov"][:, 0, 0], 0.5)
 
 
+def test_discretize_dynamics_preserves_model_and_transition_semantics():
+    initial_condition = dist.MultivariateNormal(
+        jnp.array([0.2, -0.1]),
+        jnp.array([[0.7, 0.1], [0.1, 0.5]]),
+    )
+    observation_model = LinearGaussianObservation(
+        H=jnp.array([[1.0, -0.5]]),
+        R=jnp.array([[0.3]]),
+    )
+    control_model = object()
+    diffusion = jnp.array([[0.3, 0.0], [0.1, 0.2]])
+    dynamics = DynamicalModel(
+        initial_condition=initial_condition,
+        state_evolution=ContinuousTimeStateEvolution(
+            drift=lambda x, u, t: jnp.array(
+                [
+                    -0.4 * x[0] + 0.3 * u[0] + 0.2 * t,
+                    0.1 * x[0] - 0.2 * x[1],
+                ]
+            ),
+            diffusion=FullDiffusion(diffusion),
+        ),
+        observation_model=observation_model,
+        control_model=control_model,
+        control_dim=1,
+        t0=1.5,
+    )
+    state = jnp.array([0.4, -0.2])
+    control = jnp.array([0.6])
+    previous_time = jnp.array(1.5)
+    time = jnp.array(1.9)
+
+    discrete = dsx.discretize_dynamics(dynamics, EulerMaruyamaConfig())
+    transition = discrete.state_evolution(
+        state,
+        control,
+        previous_time,
+        time,
+    )
+
+    interval = time - previous_time
+    expected_drift = jnp.array(
+        [
+            -0.4 * state[0] + 0.3 * control[0] + 0.2 * previous_time,
+            0.1 * state[0] - 0.2 * state[1],
+        ]
+    )
+    assert not discrete.continuous_time
+    assert discrete.initial_condition is initial_condition
+    assert discrete.observation_model is observation_model
+    assert discrete.control_model is control_model
+    assert discrete.control_dim == dynamics.control_dim
+    assert discrete.t0 is not None
+    assert dynamics.t0 is not None
+    assert jnp.array_equal(discrete.t0, dynamics.t0)
+    assert jnp.allclose(transition.mean, state + interval * expected_drift)
+    assert jnp.allclose(
+        transition.covariance_matrix,
+        interval * diffusion @ diffusion.T,
+    )
+
+
+def test_discretize_dynamics_rejects_discrete_model():
+    dynamics = dsx.LTI_discrete(
+        A=jnp.eye(1),
+        Q=jnp.eye(1),
+        H=jnp.eye(1),
+        R=jnp.eye(1),
+    )
+
+    with pytest.raises(TypeError, match="requires a continuous-time DynamicalModel"):
+        dsx.discretize_dynamics(dynamics)
+
+
 @pytest.mark.parametrize(
     "diffusion_form",
     ["full", "diag", "scalar", "callable_full", "callable_diag", "callable_scalar"],
