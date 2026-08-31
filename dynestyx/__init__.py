@@ -15,6 +15,10 @@ from dynestyx.inference.configs.simulator import (
 )
 from dynestyx.inference.filters import Filter
 from dynestyx.inference.latent.builder import LatentPathBuilder
+from dynestyx.inference.particle_target import (
+    CompiledParticleTarget,
+    compile_particle_target,
+)
 from dynestyx.inference.smoothers import Smoother
 from dynestyx.models import (
     AffineDrift,
@@ -75,10 +79,12 @@ __all__ = [
     "Filter",
     "Evaluation",
     "LatentPathBuilder",
+    "CompiledParticleTarget",
     "MissingObservationMetadata",
     "Smoother",
     "flatten_draws",
     "condition",
+    "compile_particle_target",
     "ConditionedResult",
     "EvaluationResult",
     "ObservationScoringConfig",

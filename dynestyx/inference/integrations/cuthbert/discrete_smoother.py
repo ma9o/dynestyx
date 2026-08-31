@@ -30,6 +30,10 @@ from dynestyx.inference.integrations.cuthbert.discrete_filter import (
 from dynestyx.inference.integrations.utils import (
     squeeze_leading_singletons,
 )
+from dynestyx.inference.particle_target import (
+    CompiledParticleTarget,
+    compile_particle_target,
+)
 from dynestyx.inference.utils.distribution_utils import (
     _cholesky_state_sequence_to_dists,
 )
@@ -106,20 +110,21 @@ def _taylor_get_dynamics_log_density(dynamics: DynamicalModel):
     return get_dynamics_log_density
 
 
-def _pf_log_potential(dynamics: DynamicalModel):
+def _pf_log_potential(target: CompiledParticleTarget):
     def log_potential(x_prev, x, mi: CuthbertInputs):
         # Unlike the forward bootstrap filter, cuthbert's backward sampler
         # expects the joint transition-plus-observation potential.
-        transition = dynamics.state_evolution(
+        return target.transition_log_prob(
             x_prev,
-            mi.u_prev,
-            mi.time_prev,
-            mi.time,
-        )
-        edist = dynamics.observation_model(x, mi.u, mi.time)
-        return (
-            jnp.asarray(transition.log_prob(x)).sum()
-            + jnp.asarray(edist.log_prob(mi.y)).sum()
+            x,
+            previous_control=mi.u_prev,
+            previous_time=mi.time_prev,
+            time=mi.time,
+        ) + target.incremental_log_potential(
+            x,
+            observation=mi.y,
+            control=mi.u,
+            time=mi.time,
         )
 
     return log_potential
@@ -226,8 +231,9 @@ def compute_cuthbert_smoother(
             if smoother_config.pf_n_smoother_particles is not None
             else int(smoother_config.n_particles)
         )
+        particle_target = compile_particle_target(dynamics)
         smoother_obj = backward_sampler.build_smoother(
-            log_potential=_pf_log_potential(dynamics),
+            log_potential=_pf_log_potential(particle_target),
             backward_sampling_fn=_pf_backward_sampling_fn(smoother_config),
             resampling_fn=_pf_resampling_fn(filter_kwargs),
             n_smoother_particles=n_smoother_particles,

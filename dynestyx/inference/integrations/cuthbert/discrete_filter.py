@@ -29,6 +29,7 @@ from dynestyx.inference.configs.filter import (
 from dynestyx.inference.integrations.utils import (
     squeeze_leading_singletons,
 )
+from dynestyx.inference.particle_target import compile_particle_target
 from dynestyx.inference.utils.distribution_utils import (
     _cholesky_state_sequence_to_dists,
 )
@@ -443,23 +444,33 @@ def run_discrete_filter(
 def _cuthbert_filter_pf(dynamics: DynamicalModel, filter_kwargs: dict | None = None):
     if filter_kwargs is None:
         filter_kwargs = {}
+    target = compile_particle_target(dynamics)
 
     def init_sample(key, mi: CuthbertInputs):
-        return dynamics.initial_condition.sample(key)
+        return target.initial_sample(key)
 
     def propagate_sample(key, x_prev, mi: CuthbertInputs):
         def _noop(key, x_prev, mi):
             return x_prev
 
         def _evolve(key, x_prev, mi):
-            d = dynamics.state_evolution(x_prev, mi.u_prev, mi.time_prev, mi.time)  # type: ignore
-            return d.sample(key)  # type: ignore
+            return target.transition_sample(
+                key,
+                x_prev,
+                previous_control=mi.u_prev,
+                previous_time=mi.time_prev,
+                time=mi.time,
+            )
 
         return jax.lax.cond(mi.is_first_step, _noop, _evolve, key, x_prev, mi)
 
     def log_potential(x_prev, x, mi: CuthbertInputs):
-        edist = dynamics.observation_model(x, mi.u, mi.time)
-        return jnp.asarray(edist.log_prob(mi.y)).sum()
+        return target.incremental_log_potential(
+            x,
+            observation=mi.y,
+            control=mi.u,
+            time=mi.time,
+        )
 
     ess_threshold = filter_kwargs.get("ess_threshold", 0.7)
     base_method = filter_kwargs.get("resampling_base_method", "systematic")
