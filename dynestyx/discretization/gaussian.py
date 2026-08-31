@@ -23,6 +23,7 @@ from dynestyx.inference.configs.discretizer import (
 )
 from dynestyx.models import (
     DiscreteTimeStateEvolution,
+    LinearGaussianParams,
     StochasticContinuousTimeStateEvolution,
 )
 from dynestyx.solvers import euler_maruyama_loc_cov
@@ -31,6 +32,34 @@ type _Moments = tuple[
     Real[Array, " state_dim"],
     Real[Array, "state_dim state_dim"],
 ]
+
+
+def _local_linearization_parameters(
+    cte: StochasticContinuousTimeStateEvolution,
+    x,
+    u,
+    t_now,
+    t_next,
+    *,
+    covariance_jitter: float,
+) -> LinearGaussianParams:
+    h = _positive_interval(t_now, t_next)
+    f0 = cte.total_drift(x=x, u=u, t=t_now)
+    J = jax.jacfwd(lambda z: cte.total_drift(x=z, u=u, t=t_now))(x)
+    L = cte.diffusion.as_matrix(
+        x=None,
+        u=None,
+        t=0,
+        state_dim=x.shape[-1],
+    )
+    return _affine_transition_parameters(
+        J,
+        None,
+        f0 - J @ x,
+        L,
+        h,
+        covariance_jitter=covariance_jitter,
+    )
 
 
 def _local_linearization_moments(
@@ -42,21 +71,12 @@ def _local_linearization_moments(
     *,
     covariance_jitter: float,
 ) -> _Moments:
-    h = _positive_interval(t_now, t_next)
-    f0 = cte.total_drift(x=x, u=u, t=t_now)
-    J = jax.jacfwd(lambda z: cte.total_drift(x=z, u=u, t=t_now))(x)
-    L = cte.diffusion.as_matrix(
-        x=None,
-        u=None,
-        t=0,
-        state_dim=x.shape[-1],
-    )
-    params = _affine_transition_parameters(
-        J,
-        None,
-        f0 - J @ x,
-        L,
-        h,
+    params = _local_linearization_parameters(
+        cte,
+        x,
+        u,
+        t_now,
+        t_next,
         covariance_jitter=covariance_jitter,
     )
     assert params.bias is not None

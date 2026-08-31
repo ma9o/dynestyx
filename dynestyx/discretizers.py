@@ -8,7 +8,10 @@ from jaxtyping import Array, Real
 
 from dynestyx.discretization.diffrax_sample import _DiffraxSampleStateEvolution
 from dynestyx.discretization.exact_affine import _ExactAffineStateEvolution
-from dynestyx.discretization.gaussian import _ConfiguredGaussianStateEvolution
+from dynestyx.discretization.gaussian import (
+    _ConfiguredGaussianStateEvolution,
+    _local_linearization_parameters,
+)
 from dynestyx.discretization.ode_flow import _ODEFlowStateEvolution
 from dynestyx.handlers import HandlesSelf, _condition_intp
 from dynestyx.inference.configs.discretizer import (
@@ -26,6 +29,7 @@ from dynestyx.models import (
     DeterministicContinuousTimeStateEvolution,
     DiscreteTimeStateEvolution,
     DynamicalModel,
+    LinearGaussianParams,
     StochasticContinuousTimeStateEvolution,
 )
 from dynestyx.models.core import StateEvolutionLike
@@ -150,6 +154,74 @@ def discretize_dynamics(
     )
 
 
+def linearized_transition_parameters(
+    dynamics: DynamicalModel,
+    discretizer_config: LocalLinearizationConfig,
+    *,
+    linearization_state: Real[Array, " state_dim"] | Real[Array, ""],
+    previous_control: Real[Array, " control_dim"] | Real[Array, ""] | None,
+    previous_time: float | int | Real[Array, ""],
+    time: float | int | Real[Array, ""],
+) -> LinearGaussianParams:
+    """Discretize one local affine approximation of a nonlinear SDE.
+
+    The continuous drift is linearized with respect to state at
+    `linearization_state`, `previous_control`, and `previous_time`. The control
+    is held fixed over the interval and is therefore absorbed into `bias`; the
+    returned `B` is `None`. The state matrix, bias, and additive diffusion are
+    then discretized over `[previous_time, time]` with the same Van Loan method
+    used by `LocalLinearizationConfig`.
+
+    Choosing a sequence of linearization states and running a Gaussian
+    inference algorithm remain consumer responsibilities. This function only
+    supplies transition-side `LinearGaussianParams`; observation linearization
+    and Gaussian recursion remain with the consumer.
+
+    Args:
+        dynamics: Continuous-time stochastic Dynestyx model to interpret.
+        discretizer_config: Local-linearization numerical configuration.
+        linearization_state: State about which to linearize the drift.
+        previous_control: Control held fixed over the interval, or `None` for
+            an uncontrolled model.
+        previous_time: Left endpoint of the transition interval.
+        time: Right endpoint of the transition interval.
+
+    Returns:
+        LinearGaussianParams: Local `(A, B, bias, cov)` parameters, with
+            `B=None` because the supplied control is frozen into `bias`.
+
+    Raises:
+        TypeError: If the model is not a stochastic continuous-time model, the
+            config is not `LocalLinearizationConfig`, or the diffusion is not
+            structurally constant and additive.
+    """
+    if not isinstance(discretizer_config, LocalLinearizationConfig):
+        raise TypeError(
+            "linearized_transition_parameters requires "
+            "LocalLinearizationConfig; "
+            f"got {type(discretizer_config).__name__}."
+        )
+    cte = dynamics.state_evolution
+    if not isinstance(cte, StochasticContinuousTimeStateEvolution):
+        raise TypeError(
+            "linearized_transition_parameters requires a stochastic "
+            "continuous-time DynamicalModel."
+        )
+    if callable(cte.diffusion.coefficient):
+        raise TypeError(
+            "LocalLinearizationConfig requires structurally constant "
+            "additive diffusion."
+        )
+    return _local_linearization_parameters(
+        cte,
+        linearization_state,
+        previous_control,
+        previous_time,
+        time,
+        covariance_jitter=discretizer_config.covariance_jitter,
+    )
+
+
 class Discretizer(ObjectInterpretation, HandlesSelf):
     r"""Performs discretization of a continuous-time state evolution, converting it to a discrete-time state evolution.
 
@@ -242,4 +314,5 @@ __all__ = [
     "MeanTrajectoryLinearizationConfig",
     "ODEFlowConfig",
     "discretize_dynamics",
+    "linearized_transition_parameters",
 ]

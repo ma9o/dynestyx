@@ -5,7 +5,11 @@ from importlib.metadata import version
 __version__ = version("dynestyx")
 
 from dynestyx.api import log_prob, simulate
-from dynestyx.discretizers import Discretizer, discretize_dynamics
+from dynestyx.discretizers import (
+    Discretizer,
+    discretize_dynamics,
+    linearized_transition_parameters,
+)
 from dynestyx.evaluation import Evaluation, ObservationScoringConfig
 from dynestyx.handlers import condition, plate, sample
 from dynestyx.inference.configs.simulator import (
@@ -86,6 +90,7 @@ __all__ = [
     "condition",
     "build_particle_operators",
     "discretize_dynamics",
+    "linearized_transition_parameters",
     "ConditionedResult",
     "EvaluationResult",
     "ObservationScoringConfig",

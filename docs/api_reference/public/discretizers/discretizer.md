@@ -51,10 +51,51 @@ Pass `ODEFlowConfig(simulator_config=ODESimulatorConfig(...), jitter_scale=...)`
 Both `discretize_dynamics()` and `Discretizer()` use this routing. The handler
 delegates its model conversion to the same pure function.
 
+## Local affine-Gaussian parameters
+
+Some inference algorithms need the affine parameters of the approximation,
+rather than only the Gaussian transition distribution produced by
+`LocalLinearizationConfig`. Those parameters can be requested for one interval
+without selecting a filter or smoother:
+
+```python
+import dynestyx as dsx
+from dynestyx.discretizers import LocalLinearizationConfig
+
+params = dsx.linearized_transition_parameters(
+    continuous_dynamics,
+    LocalLinearizationConfig(covariance_jitter=1e-8),
+    linearization_state=reference_state,
+    previous_control=control,
+    previous_time=t_now,
+    time=t_next,
+)
+
+A = params.A
+bias = params.bias
+Q = params.cov
+```
+
+The result is the existing `LinearGaussianParams` value. It describes the
+same one-interval approximation used by `LocalLinearizationConfig`: the drift
+is linearized at `linearization_state`, while time and control are frozen at
+the left endpoint. Consequently, the supplied control is included in `bias`
+and `params.B` is `None`.
+
+The function is JAX-transformable, so a consumer can `vmap` it along a
+reference trajectory. Choosing that trajectory, iterating an IEKS, or running
+a Kalman filter remains the responsibility of the inference library. These are
+transition-side inputs only: observation linearization and Gaussian recursion
+remain consumer responsibilities. For a globally affine model,
+`ExactAffineConfig` instead produces a
+`LinearGaussianStateEvolution` whose `params_at(t_now, t_next)` method returns
+exact interval parameters without a linearization state.
+
 ::: dynestyx.discretizers
     options:
       members:
         - discretize_dynamics
+        - linearized_transition_parameters
         - Discretizer
       show_root_heading: false
       show_root_toc_entry: false
