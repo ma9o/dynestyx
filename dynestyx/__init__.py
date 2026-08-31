@@ -5,7 +5,7 @@ from importlib.metadata import version
 __version__ = version("dynestyx")
 
 from dynestyx.api import log_prob, simulate
-from dynestyx.discretizers import Discretizer
+from dynestyx.discretizers import Discretizer, discretize_dynamics
 from dynestyx.evaluation import Evaluation, ObservationScoringConfig
 from dynestyx.handlers import condition, plate, sample
 from dynestyx.inference.configs.simulator import (
@@ -79,6 +79,7 @@ __all__ = [
     "Smoother",
     "flatten_draws",
     "condition",
+    "discretize_dynamics",
     "ConditionedResult",
     "EvaluationResult",
     "ObservationScoringConfig",

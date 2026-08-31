@@ -1,5 +1,25 @@
-# Discretizers
+# Discretization
 
+A continuous-time `DynamicalModel` can be converted into a discrete-time model
+without entering an effect-handler context:
+
+```python
+import dynestyx as dsx
+from dynestyx.discretizers import EulerMaruyamaConfig
+
+discrete_dynamics = dsx.discretize_dynamics(
+    continuous_dynamics,
+    EulerMaruyamaConfig(),
+)
+```
+
+The returned model preserves the initial condition, observation model, control
+metadata, and initial time. Its state evolution is the interval transition
+selected by the discretizer configuration. This pure form is suitable for
+retaining and reusing the selected interval transition outside an
+effect-handler context.
+
+## Effect-handler form
 
 A `Discretizer` maps a `ContinuousTimeStateEvolution` to a `DiscreteTimeStateEvolution` by discretizing the corresponding ODE or SDE; the resulting model is compatible with discrete-time inference techniques in `dynestyx` when the selected transition interface supplies what the inference method requires. The discretizer context should be placed *inside* the corresponding inference context:
 
@@ -27,3 +47,14 @@ When no configuration is supplied, `Discretizer()` chooses automatically:
 - other SDE models use Euler--Maruyama discretization by default.
 
 Pass `ODEFlowConfig(simulator_config=ODESimulatorConfig(...), jitter_scale=...)` to customize ODE integration; all Diffrax settings are taken from the nested `ODESimulatorConfig`.
+
+Both `discretize_dynamics()` and `Discretizer()` use this routing. The handler
+delegates its model conversion to the same pure function.
+
+::: dynestyx.discretizers
+    options:
+      members:
+        - discretize_dynamics
+        - Discretizer
+      show_root_heading: false
+      show_root_toc_entry: false
