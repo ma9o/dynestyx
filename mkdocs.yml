@@ -92,6 +92,7 @@ nav:
       - Inference:
         - Filters: api_reference/public/inference/filters.md
         - Particle Operators: api_reference/public/inference/particle_operators.md
+        - Particle runtime: api_reference/public/inference/particle_runtime.md
         - FilterConfigs: api_reference/public/inference/configs/filter_configs.md
         - LatentPathBuilder: api_reference/public/inference/latent_path_builder.md
         - Smoothers: api_reference/public/inference/smoothers.md
