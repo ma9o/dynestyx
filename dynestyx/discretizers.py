@@ -8,7 +8,10 @@ from jaxtyping import Array, Real
 
 from dynestyx.discretization.diffrax_sample import _DiffraxSampleStateEvolution
 from dynestyx.discretization.exact_affine import _ExactAffineStateEvolution
-from dynestyx.discretization.gaussian import _ConfiguredGaussianStateEvolution
+from dynestyx.discretization.gaussian import (
+    _ConfiguredGaussianStateEvolution,
+    _local_linearization_parameters,
+)
 from dynestyx.discretization.ode_flow import _ODEFlowStateEvolution
 from dynestyx.handlers import HandlesSelf, _condition_intp
 from dynestyx.inference.configs.discretizer import (
@@ -26,6 +29,7 @@ from dynestyx.models import (
     DeterministicContinuousTimeStateEvolution,
     DiscreteTimeStateEvolution,
     DynamicalModel,
+    LinearGaussianParams,
     StochasticContinuousTimeStateEvolution,
 )
 from dynestyx.models.core import StateEvolutionLike
@@ -46,11 +50,15 @@ def _automatic_discretizer_config(
     return EulerMaruyamaConfig()
 
 
-def _discretize_state_evolution(
+def discretize_state_evolution(
     cte: StateEvolutionLike,
     config: BaseDiscretizerConfig | None = None,
 ) -> DiscreteTimeStateEvolution:
-    """Build the private discrete transition selected by a config."""
+    """Interpret a continuous state evolution using explicit or default numerics.
+
+    This is the transition-level operation used by ``discretize_dynamics``.
+    A consumer with its own initial/emission model can use it directly.
+    """
     if not isinstance(
         cte,
         (
@@ -101,6 +109,120 @@ def _discretize_state_evolution(
     raise TypeError(
         "discretizer_config must be a concrete BaseDiscretizerConfig; "
         f"got {type(resolved).__name__}."
+    )
+
+
+def discretize_dynamics(
+    dynamics: DynamicalModel,
+    discretizer_config: BaseDiscretizerConfig | None = None,
+) -> DynamicalModel:
+    """Build a discrete-time model from continuous-time dynamics.
+
+    This is the pure model-level counterpart to the `Discretizer` effect
+    handler. It preserves the initial condition, observation model, control
+    metadata, and declared initial time while replacing the continuous state
+    evolution with the transition selected by `discretizer_config`.
+
+    When no config is provided, deterministic ODEs use their numerical flow,
+    affine SDEs with constant diffusion and no potential use an exact Gaussian
+    transition, and other SDEs use Euler--Maruyama.
+
+    Args:
+        dynamics: Continuous-time model to discretize.
+        discretizer_config: Explicit discretization config, or `None` for
+            automatic routing.
+
+    Returns:
+        DynamicalModel: A discrete-time model with the selected interval
+            transition.
+
+    Raises:
+        TypeError: If `dynamics` is already discrete-time or the config is not
+            compatible with its continuous state evolution.
+    """
+    if not dynamics.continuous_time:
+        raise TypeError(
+            "discretize_dynamics requires a continuous-time DynamicalModel; "
+            "got a discrete-time model."
+        )
+    return DynamicalModel(
+        initial_condition=dynamics.initial_condition,
+        state_evolution=discretize_state_evolution(
+            dynamics.state_evolution,
+            discretizer_config,
+        ),
+        observation_model=dynamics.observation_model,
+        control_model=dynamics.control_model,
+        control_dim=dynamics.control_dim,
+        t0=dynamics.t0,
+    )
+
+
+def linearized_transition_parameters(
+    dynamics: DynamicalModel | StochasticContinuousTimeStateEvolution,
+    discretizer_config: LocalLinearizationConfig,
+    *,
+    linearization_state: Real[Array, " state_dim"] | Real[Array, ""],
+    previous_control: Real[Array, " control_dim"] | Real[Array, ""] | None,
+    previous_time: float | int | Real[Array, ""],
+    time: float | int | Real[Array, ""],
+) -> LinearGaussianParams:
+    """Discretize one local affine approximation of a nonlinear SDE.
+
+    The continuous drift is linearized with respect to state at
+    `linearization_state`, `previous_control`, and `previous_time`. The control
+    is held fixed over the interval and is therefore absorbed into `bias`; the
+    returned `B` is `None`. The state matrix, bias, and additive diffusion are
+    then discretized over `[previous_time, time]` with the same Van Loan method
+    used by `LocalLinearizationConfig`.
+
+    Choosing a sequence of linearization states and running a Gaussian
+    inference algorithm remain consumer responsibilities. This function only
+    supplies transition-side `LinearGaussianParams`; observation linearization
+    and Gaussian recursion remain with the consumer.
+
+    Args:
+        dynamics: Continuous-time stochastic model or state evolution to interpret.
+        discretizer_config: Local-linearization numerical configuration.
+        linearization_state: State about which to linearize the drift.
+        previous_control: Control held fixed over the interval, or `None` for
+            an uncontrolled model.
+        previous_time: Left endpoint of the transition interval.
+        time: Right endpoint of the transition interval.
+
+    Returns:
+        LinearGaussianParams: Local `(A, B, bias, cov)` parameters, with
+            `B=None` because the supplied control is frozen into `bias`.
+
+    Raises:
+        TypeError: If the model is not a stochastic continuous-time model, the
+            config is not `LocalLinearizationConfig`, or the diffusion is not
+            structurally constant and additive.
+    """
+    if not isinstance(discretizer_config, LocalLinearizationConfig):
+        raise TypeError(
+            "linearized_transition_parameters requires "
+            "LocalLinearizationConfig; "
+            f"got {type(discretizer_config).__name__}."
+        )
+    cte = dynamics.state_evolution if isinstance(dynamics, DynamicalModel) else dynamics
+    if not isinstance(cte, StochasticContinuousTimeStateEvolution):
+        raise TypeError(
+            "linearized_transition_parameters requires a stochastic "
+            "continuous-time DynamicalModel."
+        )
+    if callable(cte.diffusion.coefficient):
+        raise TypeError(
+            "LocalLinearizationConfig requires structurally constant "
+            "additive diffusion."
+        )
+    return _local_linearization_parameters(
+        cte,
+        linearization_state,
+        previous_control,
+        previous_time,
+        time,
+        covariance_jitter=discretizer_config.covariance_jitter,
     )
 
 
@@ -169,16 +291,9 @@ class Discretizer(ObjectInterpretation, HandlesSelf):
                 StochasticContinuousTimeStateEvolution,
             ),
         ):
-            dynamics = DynamicalModel(
-                initial_condition=dynamics.initial_condition,
-                state_evolution=_discretize_state_evolution(
-                    dynamics.state_evolution,
-                    self.discretizer_config,
-                ),
-                observation_model=dynamics.observation_model,
-                control_model=dynamics.control_model,
-                control_dim=dynamics.control_dim,
-                t0=dynamics.t0,
+            dynamics = discretize_dynamics(
+                dynamics,
+                self.discretizer_config,
             )
         return fwd(
             name,
@@ -202,4 +317,7 @@ __all__ = [
     "LocalLinearizationConfig",
     "MeanTrajectoryLinearizationConfig",
     "ODEFlowConfig",
+    "discretize_dynamics",
+    "discretize_state_evolution",
+    "linearized_transition_parameters",
 ]

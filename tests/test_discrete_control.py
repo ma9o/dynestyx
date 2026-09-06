@@ -19,7 +19,7 @@ from dynestyx.control.mppi import MPPI
 from dynestyx.discretizers import (
     Discretizer,
     EulerMaruyamaConfig,
-    _discretize_state_evolution,
+    discretize_state_evolution,
 )
 from dynestyx.inference.configs.filter import EKFConfig, EnKFConfig, KFConfig, PFConfig
 from dynestyx.inference.integrations.cuthbert.discrete_filter import (
@@ -294,7 +294,7 @@ def _euler_maruyama_dynamics():
     )
     return DynamicalModel(
         initial_condition=continuous_dynamics.initial_condition,
-        state_evolution=_discretize_state_evolution(
+        state_evolution=discretize_state_evolution(
             continuous_dynamics.state_evolution,
             EulerMaruyamaConfig(),
         ),

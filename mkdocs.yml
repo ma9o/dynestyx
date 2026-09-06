@@ -91,6 +91,7 @@ nav:
           - LTI_discrete: api_reference/public/models/specialized/lti_discrete.md
       - Inference:
         - Filters: api_reference/public/inference/filters.md
+        - Particle Operators: api_reference/public/inference/particle_operators.md
         - FilterConfigs: api_reference/public/inference/configs/filter_configs.md
         - LatentPathBuilder: api_reference/public/inference/latent_path_builder.md
         - Smoothers: api_reference/public/inference/smoothers.md

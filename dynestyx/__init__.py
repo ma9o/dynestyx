@@ -5,7 +5,12 @@ from importlib.metadata import version
 __version__ = version("dynestyx")
 
 from dynestyx.api import log_prob, simulate
-from dynestyx.discretizers import Discretizer
+from dynestyx.discretizers import (
+    Discretizer,
+    discretize_dynamics,
+    discretize_state_evolution,
+    linearized_transition_parameters,
+)
 from dynestyx.evaluation import Evaluation, ObservationScoringConfig
 from dynestyx.handlers import condition, plate, sample
 from dynestyx.inference.configs.simulator import (
@@ -15,6 +20,10 @@ from dynestyx.inference.configs.simulator import (
 )
 from dynestyx.inference.filters import Filter
 from dynestyx.inference.latent.builder import LatentPathBuilder
+from dynestyx.inference.particle_operators import (
+    ParticleOperators,
+    build_particle_operators,
+)
 from dynestyx.inference.smoothers import Smoother
 from dynestyx.models import (
     AffineDrift,
@@ -75,10 +84,15 @@ __all__ = [
     "Filter",
     "Evaluation",
     "LatentPathBuilder",
+    "ParticleOperators",
     "MissingObservationMetadata",
     "Smoother",
     "flatten_draws",
     "condition",
+    "build_particle_operators",
+    "discretize_dynamics",
+    "discretize_state_evolution",
+    "linearized_transition_parameters",
     "ConditionedResult",
     "EvaluationResult",
     "ObservationScoringConfig",

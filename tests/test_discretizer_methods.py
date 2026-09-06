@@ -4,6 +4,7 @@ import diffrax as dfx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import jax.scipy.linalg as jsp_linalg
 import numpyro.distributions as dist
 import pytest
 from numpyro.handlers import seed, trace
@@ -16,7 +17,7 @@ from dynestyx.discretizers import (
     LocalLinearizationConfig,
     MeanTrajectoryLinearizationConfig,
     ODEFlowConfig,
-    _discretize_state_evolution,
+    discretize_state_evolution,
 )
 from dynestyx.evaluation.configs import ObservationScoringConfig
 from dynestyx.evaluation.handlers import Evaluation
@@ -76,6 +77,23 @@ def _nonlinear_model() -> DynamicalModel:
     )
 
 
+def _nonlinear_additive_model() -> DynamicalModel:
+    return DynamicalModel(
+        initial_condition=dist.MultivariateNormal(jnp.zeros(2), jnp.eye(2)),
+        state_evolution=ContinuousTimeStateEvolution(
+            drift=lambda x, u, t: jnp.array(
+                [
+                    -0.4 * x[0] + 0.25 * x[1] ** 2 + 0.3 * u[0] + 0.1 * t,
+                    0.2 * x[0] - 0.1 * x[1] - 0.2 * u[0],
+                ]
+            ),
+            diffusion=FullDiffusion(jnp.array([[0.3, 0.0], [0.1, 0.2]])),
+        ),
+        observation_model=LinearGaussianObservation(H=jnp.eye(2), R=jnp.eye(2)),
+        control_dim=1,
+    )
+
+
 def _ode_config() -> ODESimulatorConfig:
     return ODESimulatorConfig(
         solver=dfx.Tsit5(),
@@ -96,7 +114,7 @@ def _diffrax_config() -> DiffraxSampleConfig:
 
 
 def test_ode_flow_matches_controlled_linear_analytic_solution():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _ode_state_evolution(),
         ODEFlowConfig(simulator_config=_ode_config()),
     )
@@ -118,7 +136,7 @@ def test_ode_flow_matches_controlled_linear_analytic_solution():
 
 
 def test_ode_flow_positive_jitter_returns_independent_normal():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _ode_state_evolution(),
         ODEFlowConfig(simulator_config=_ode_config(), jitter_scale=0.3),
     )
@@ -151,7 +169,7 @@ def test_ode_flow_passes_simulator_config_settings(monkeypatch):
     monkeypatch.setattr(
         "dynestyx.discretization.ode_flow.solve_ode_interval", fake_solve
     )
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _ode_state_evolution(),
         ODEFlowConfig(simulator_config=simulator_config),
     )
@@ -175,21 +193,21 @@ def test_ode_flow_rejects_invalid_jitter_scale(jitter_scale):
 def test_ode_flow_automatic_routing_and_config_type_errors():
     ode = _ode_state_evolution()
     assert isinstance(
-        _discretize_state_evolution(ode)(jnp.ones(2), jnp.ones(1), 0.0, 0.01),
+        discretize_state_evolution(ode)(jnp.ones(2), jnp.ones(1), 0.0, 0.01),
         dist.Delta,
     )
 
     with pytest.raises(TypeError, match="requires a stochastic"):
-        _discretize_state_evolution(ode, ExactAffineConfig())
+        discretize_state_evolution(ode, ExactAffineConfig())
     with pytest.raises(TypeError, match="requires a deterministic"):
-        _discretize_state_evolution(
+        discretize_state_evolution(
             _nonlinear_model().state_evolution,
             ODEFlowConfig(),
         )
 
 
 def test_ode_flow_is_jittable_and_differentiable():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _ode_state_evolution(),
         ODEFlowConfig(simulator_config=_ode_config()),
     )
@@ -327,7 +345,7 @@ def test_ode_flow_cuthbert_enkf_supports_observation_scoring():
 
 
 def test_exact_affine_matches_scalar_ou_transition():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _affine_model().state_evolution,
         ExactAffineConfig(),
     )
@@ -348,7 +366,7 @@ def test_exact_affine_stiff_covariance_is_finite_in_float32():
         H=jnp.ones((1, 1), dtype=jnp.float32),
         R=jnp.eye(1, dtype=jnp.float32),
     )
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         model.state_evolution,
         ExactAffineConfig(),
     )
@@ -371,7 +389,7 @@ def test_exact_affine_integrator_covariance_remains_exact():
         H=jnp.ones((1, 1)),
         R=jnp.eye(1),
     )
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         model.state_evolution,
         ExactAffineConfig(),
     )
@@ -384,7 +402,7 @@ def test_exact_affine_integrator_covariance_remains_exact():
 
 
 def test_local_linearization_stiff_covariance_is_finite_in_float32():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         StochasticContinuousTimeStateEvolution(
             drift=lambda x, u, t: -100.0 * x,
             diffusion=FullDiffusion(jnp.ones((1, 1), dtype=jnp.float32)),
@@ -398,6 +416,110 @@ def test_local_linearization_stiff_covariance_is_finite_in_float32():
     assert jnp.allclose(transition.covariance_matrix, 0.005, rtol=2e-5)
 
 
+def test_linearized_transition_parameters_match_configured_transition():
+    dynamics = _nonlinear_additive_model()
+    config = LocalLinearizationConfig(covariance_jitter=1e-8)
+    state = jnp.array([0.3, -0.6])
+    control = jnp.array([0.4])
+    previous_time = jnp.array(0.2)
+    time = jnp.array(0.65)
+
+    params = dsx.linearized_transition_parameters(
+        dynamics,
+        config,
+        linearization_state=state,
+        previous_control=control,
+        previous_time=previous_time,
+        time=time,
+    )
+    transition = dsx.discretize_dynamics(dynamics, config).state_evolution(
+        state,
+        control,
+        previous_time,
+        time,
+    )
+
+    expected_jacobian = jnp.array([[-0.4, 0.5 * state[1]], [0.2, -0.1]])
+    assert params.B is None
+    assert params.bias is not None
+    assert jnp.allclose(
+        params.A,
+        jsp_linalg.expm(expected_jacobian * (time - previous_time)),
+    )
+    assert jnp.allclose(params.A @ state + params.bias, transition.mean)
+    assert jnp.allclose(params.cov, transition.covariance_matrix)
+
+
+def test_linearized_transition_parameters_are_state_dependent_and_vmappable():
+    dynamics = _nonlinear_additive_model()
+    config = LocalLinearizationConfig()
+    states = jnp.array([[0.3, -0.6], [-0.2, 0.7]])
+    controls = jnp.array([[0.4], [-0.1]])
+    previous_times = jnp.array([0.1, 0.3])
+    times = jnp.array([0.45, 0.8])
+
+    def _parameters(state, control, previous_time, time):
+        return dsx.linearized_transition_parameters(
+            dynamics,
+            config,
+            linearization_state=state,
+            previous_control=control,
+            previous_time=previous_time,
+            time=time,
+        )
+
+    params = jax.vmap(_parameters)(states, controls, previous_times, times)
+
+    assert params.A.shape == (2, 2, 2)
+    assert params.B is None
+    assert params.bias is not None
+    assert params.bias.shape == (2, 2)
+    assert params.cov.shape == (2, 2, 2)
+    assert not jnp.allclose(params.A[0], params.A[1])
+
+
+def test_linearized_transition_parameters_reject_nonstochastic_models():
+    discrete = dsx.LTI_discrete(
+        A=jnp.eye(1),
+        Q=jnp.eye(1),
+        H=jnp.eye(1),
+        R=jnp.eye(1),
+    )
+    deterministic = DynamicalModel(
+        initial_condition=dist.MultivariateNormal(jnp.zeros(2), jnp.eye(2)),
+        state_evolution=_ode_state_evolution(),
+        observation_model=LinearGaussianObservation(H=jnp.eye(2), R=jnp.eye(2)),
+        control_dim=1,
+    )
+    config = LocalLinearizationConfig()
+
+    for dynamics, state, control in (
+        (discrete, jnp.zeros(1), None),
+        (deterministic, jnp.zeros(2), jnp.zeros(1)),
+    ):
+        with pytest.raises(TypeError, match="stochastic continuous-time"):
+            dsx.linearized_transition_parameters(
+                dynamics,
+                config,
+                linearization_state=state,
+                previous_control=control,
+                previous_time=0.0,
+                time=0.1,
+            )
+
+
+def test_linearized_transition_parameters_reject_state_dependent_diffusion():
+    with pytest.raises(TypeError, match="structurally constant additive diffusion"):
+        dsx.linearized_transition_parameters(
+            _nonlinear_model(),
+            LocalLinearizationConfig(),
+            linearization_state=jnp.array([0.2]),
+            previous_control=None,
+            previous_time=0.0,
+            time=0.1,
+        )
+
+
 @pytest.mark.parametrize(
     "config",
     [
@@ -407,11 +529,11 @@ def test_local_linearization_stiff_covariance_is_finite_in_float32():
 )
 def test_gaussian_approximations_match_affine_transition(config):
     model = _affine_model()
-    exact = _discretize_state_evolution(
+    exact = discretize_state_evolution(
         model.state_evolution,
         ExactAffineConfig(),
     )(jnp.array([1.2]), None, 0.0, 0.2)
-    approximate = _discretize_state_evolution(
+    approximate = discretize_state_evolution(
         model.state_evolution,
         config,
     )(jnp.array([1.2]), None, 0.0, 0.2)
@@ -425,7 +547,7 @@ def test_gaussian_approximations_match_affine_transition(config):
 
 
 def test_mean_trajectory_linearization_runs_for_nonlinear_sde():
-    transition = _discretize_state_evolution(
+    transition = discretize_state_evolution(
         _nonlinear_model().state_evolution,
         MeanTrajectoryLinearizationConfig(ode_solver=_ode_config()),
     )(jnp.array([0.2]), None, 0.0, 0.1)
@@ -435,7 +557,7 @@ def test_mean_trajectory_linearization_runs_for_nonlinear_sde():
 
 
 def test_diffrax_sample_transition_samples_but_has_no_density():
-    transition = _discretize_state_evolution(
+    transition = discretize_state_evolution(
         _nonlinear_model().state_evolution,
         _diffrax_config(),
     )(jnp.array([0.0]), None, 0.0, 0.05)
@@ -453,7 +575,7 @@ def test_diffrax_sample_transition_samples_but_has_no_density():
 
 
 def test_diffrax_rsample_is_differentiable_in_initial_state():
-    evolution = _discretize_state_evolution(
+    evolution = discretize_state_evolution(
         _affine_model().state_evolution,
         _diffrax_config(),
     )
