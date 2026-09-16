@@ -1,0 +1,703 @@
+{
+  "environment": {
+    "python": "3.12.14",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "Apple M1 Max",
+    "packages": {
+      "jax": "0.11.1",
+      "jaxlib": "0.11.1",
+      "numpyro": "0.21.0",
+      "equinox": "0.13.8",
+      "blackjax": "1.6.2",
+      "numpy": "2.5.2"
+    },
+    "devices": [
+      "cpu:0"
+    ],
+    "x64": false,
+    "source": "dynestyx/observation_missingness.py",
+    "source_sha256": "2cd028b56670b303aace4c6d823cd194be34780e00cda89a62e9042fa0718030",
+    "git_head": "dd7a56e91ef8cd45cdf806d7e044c835d70e4a75"
+  },
+  "options": {
+    "dimensions": [
+      8,
+      32
+    ],
+    "particles": 4096,
+    "repeats": 100
+  },
+  "timing": "randomized interleaving; synchronous calls; excludes compilation",
+  "results": [
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.1665489579900168,
+      "temporary_bytes": 262288,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 105.4165,
+      "p25_us": 96.83324999999999,
+      "p75_us": 115.49975
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.1480474999989383,
+      "temporary_bytes": 262224,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 102.4375,
+      "p25_us": 92.94800000000001,
+      "p75_us": 113.79175000000001
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.04164383403258398,
+      "temporary_bytes": 1179792,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 219.625,
+      "p25_us": 210.76,
+      "p75_us": 230.5105
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00030025001615285873,
+      "temporary_bytes": 262224,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 104.3545,
+      "p25_us": 94.61475,
+      "p75_us": 118.1045
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.07983291597338393,
+      "temporary_bytes": 2359648,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1418.062,
+      "p25_us": 1408.80175,
+      "p75_us": 1435.6875
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.1506247500074096,
+      "temporary_bytes": 262288,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 100.667,
+      "p25_us": 94.02074999999999,
+      "p75_us": 108.5415
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.15368791698710993,
+      "temporary_bytes": 262224,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 101.75,
+      "p25_us": 94.28075,
+      "p75_us": 109.67699999999999
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.03912687499541789,
+      "temporary_bytes": 1179792,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 217.4375,
+      "p25_us": 210.2505,
+      "p75_us": 226.56225
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003058339934796095,
+      "temporary_bytes": 262224,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 99.417,
+      "p25_us": 90.8955,
+      "p75_us": 109.07325
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.06635425001149997,
+      "temporary_bytes": 2359648,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1421.0414999999998,
+      "p25_us": 1406.771,
+      "p75_us": 1441.26025
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.04879058396909386,
+      "temporary_bytes": 296976,
+      "result_shape": [
+        512
+      ],
+      "median_us": 206.45850000000002,
+      "p25_us": 203.75,
+      "p75_us": 209.3755
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.0408570829895325,
+      "temporary_bytes": 296976,
+      "result_shape": [
+        512
+      ],
+      "median_us": 211.7285,
+      "p25_us": 208.04175,
+      "p75_us": 214.91649999999998
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.03896724997321144,
+      "temporary_bytes": 296976,
+      "result_shape": [
+        512
+      ],
+      "median_us": 210.54149999999998,
+      "p25_us": 208.3225,
+      "p75_us": 213.615
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00032654200913384557,
+      "temporary_bytes": 296976,
+      "result_shape": [
+        512
+      ],
+      "median_us": 211.04149999999998,
+      "p25_us": 207.6975,
+      "p75_us": 213.35399999999998
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.07323445804649964,
+      "temporary_bytes": 315680,
+      "result_shape": [
+        512
+      ],
+      "median_us": 372.354,
+      "p25_us": 368.75025,
+      "p75_us": 376.72950000000003
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.07155087502906099,
+      "temporary_bytes": 262416,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 149.8965,
+      "p25_us": 132.47899999999998,
+      "p75_us": 168.823
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.06717895797919482,
+      "temporary_bytes": 262288,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 149.97899999999998,
+      "p25_us": 134.13524999999998,
+      "p75_us": 171.53075
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.04853720800019801,
+      "temporary_bytes": 1179920,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 224.875,
+      "p25_us": 217.07274999999998,
+      "p75_us": 235.66675
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003464160254225135,
+      "temporary_bytes": 262288,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 150.458,
+      "p25_us": 126.35374999999999,
+      "p75_us": 170.375
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.08874050003942102,
+      "temporary_bytes": 2359640,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1503.0205,
+      "p25_us": 1487.0520000000001,
+      "p75_us": 1517.99975
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.049572042014915496,
+      "temporary_bytes": 2359440,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1311.8545,
+      "p25_us": 1286.51075,
+      "p75_us": 1340.875
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.04380116699030623,
+      "temporary_bytes": 2359440,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1315.125,
+      "p25_us": 1288.67675,
+      "p75_us": 1342.69825
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.04280216700863093,
+      "temporary_bytes": 2359440,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1301.583,
+      "p25_us": 1287.06225,
+      "p75_us": 1323.70775
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00032304198248311877,
+      "temporary_bytes": 2359440,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1298.292,
+      "p25_us": 1285.73975,
+      "p75_us": 1321.4995
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.07140279200393707,
+      "temporary_bytes": 2490712,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 2609.1040000000003,
+      "p25_us": 2577.0522499999997,
+      "p75_us": 2658.79225
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.07110741699580103,
+      "temporary_bytes": 1048720,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 295.1255,
+      "p25_us": 255.64525,
+      "p75_us": 329.47974999999997
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.06523212505271658,
+      "temporary_bytes": 1048656,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 291.64599999999996,
+      "p25_us": 258.28125,
+      "p75_us": 335.0935
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.06373304198496044,
+      "temporary_bytes": 17301648,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1060.562,
+      "p25_us": 1042.5417499999999,
+      "p75_us": 1084.9685
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003499999875202775,
+      "temporary_bytes": 1048656,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 288.95849999999996,
+      "p25_us": 262.41675,
+      "p75_us": 321.531
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.10631158296018839,
+      "temporary_bytes": 34603360,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 10998.854500000001,
+      "p25_us": 10947.4485,
+      "p75_us": 11050.6765
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.06389912503072992,
+      "temporary_bytes": 1048720,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 300.6665,
+      "p25_us": 255.18725,
+      "p75_us": 335.8755
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.08001145900925621,
+      "temporary_bytes": 1048656,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 296.1245,
+      "p25_us": 254.58375,
+      "p75_us": 339.35425
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.0620397079619579,
+      "temporary_bytes": 17301648,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1059.9995,
+      "p25_us": 1038.51075,
+      "p75_us": 1077.68725
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003463749890215695,
+      "temporary_bytes": 1048656,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 287.438,
+      "p25_us": 253.96875,
+      "p75_us": 319.92724999999996
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.08344204199966043,
+      "temporary_bytes": 34603360,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 11011.042,
+      "p25_us": 10945.23925,
+      "p75_us": 11103.406
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.06687241699546576,
+      "temporary_bytes": 4327440,
+      "result_shape": [
+        512
+      ],
+      "median_us": 853.6455000000001,
+      "p25_us": 827.25025,
+      "p75_us": 894.4275
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.06120829202700406,
+      "temporary_bytes": 4327440,
+      "result_shape": [
+        512
+      ],
+      "median_us": 853.7915,
+      "p25_us": 834.802,
+      "p75_us": 891.07325
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.06019670801470056,
+      "temporary_bytes": 4327440,
+      "result_shape": [
+        512
+      ],
+      "median_us": 855.3125,
+      "p25_us": 833.7395,
+      "p75_us": 887.03125
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003125829971395433,
+      "temporary_bytes": 4327440,
+      "result_shape": [
+        512
+      ],
+      "median_us": 854.8335,
+      "p25_us": 833.4585,
+      "p75_us": 887.99975
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.0944064169889316,
+      "temporary_bytes": 4395296,
+      "result_shape": [
+        512
+      ],
+      "median_us": 2312.9790000000003,
+      "p25_us": 2283.698,
+      "p75_us": 2358.64575
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.12236054200911894,
+      "temporary_bytes": 1048848,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 461.0625,
+      "p25_us": 418.77125,
+      "p75_us": 522.8545
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.12417170801199973,
+      "temporary_bytes": 1048720,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 461.8955,
+      "p25_us": 417.438,
+      "p75_us": 503.583
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.12283774995012209,
+      "temporary_bytes": 17432720,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1074.2289999999998,
+      "p25_us": 1055.9375,
+      "p75_us": 1101.67675
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00036204204661771655,
+      "temporary_bytes": 1048720,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 459.625,
+      "p25_us": 409.26025,
+      "p75_us": 521.52075
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.16111450002063066,
+      "temporary_bytes": 34603352,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 11235.729500000001,
+      "p25_us": 11180.71875,
+      "p75_us": 11317.0735
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.06933033303357661,
+      "temporary_bytes": 34603152,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 4568.4165,
+      "p25_us": 4523.66675,
+      "p75_us": 4615.93775
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.06749375001527369,
+      "temporary_bytes": 34603152,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 4294.666499999999,
+      "p25_us": 4239.917,
+      "p75_us": 4493.72875
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.06364762497832999,
+      "temporary_bytes": 34603152,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 4255.333500000001,
+      "p25_us": 4226.97925,
+      "p75_us": 4443.9795
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003595830057747662,
+      "temporary_bytes": 34603152,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 4294.3955,
+      "p25_us": 4232.7705,
+      "p75_us": 4519.989
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.08613083395175636,
+      "temporary_bytes": 35127640,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 14478.0625,
+      "p25_us": 14318.7605,
+      "p75_us": 14739.40575
+    }
+  ]
+}

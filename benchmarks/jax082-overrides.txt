@@ -1,0 +1,2 @@
+# Only for the JAX 0.8.2 kernel experiment, not the production dependency set.
+blackjax==1.3

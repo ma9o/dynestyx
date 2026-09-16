@@ -1,0 +1,659 @@
+{
+  "environment": {
+    "python": "3.12.14",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "Apple M1 Max",
+    "packages": {
+      "jax": "0.8.2",
+      "jaxlib": "0.8.2",
+      "numpyro": "0.21.0",
+      "equinox": "0.13.2",
+      "blackjax": "1.3",
+      "numpy": "2.5.3"
+    },
+    "devices": [
+      "TFRT_CPU_0"
+    ],
+    "x64": false,
+    "source": "dynestyx/observation_missingness.py",
+    "source_sha256": "2cd028b56670b303aace4c6d823cd194be34780e00cda89a62e9042fa0718030",
+    "git_head": "dd7a56e91ef8cd45cdf806d7e044c835d70e4a75"
+  },
+  "options": {
+    "dimensions": [
+      8,
+      32
+    ],
+    "particles": 4096,
+    "repeats": 100
+  },
+  "timing": "randomized interleaving; synchronous calls; excludes compilation",
+  "results": [
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.04716333304531872,
+      "temporary_bytes": 131216,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 80.5625,
+      "p25_us": 70.15625,
+      "p75_us": 90.68775
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "triangular_native",
+      "error": "ValueError: Batching dimension 0_0 corresponds to two sizes: 1 and 4096"
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.0471605000202544,
+      "temporary_bytes": 1179856,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 175.64600000000002,
+      "p25_us": 168.80225000000002,
+      "p75_us": 186.875
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003118339809589088,
+      "temporary_bytes": 131216,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 76.583,
+      "p25_us": 68.94749999999999,
+      "p75_us": 86.875
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.08928754203952849,
+      "temporary_bytes": 2359712,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1406.9375,
+      "p25_us": 1390.07275,
+      "p75_us": 1438.1665
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.046963625005446374,
+      "temporary_bytes": 131216,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 76.396,
+      "p25_us": 68.61475,
+      "p75_us": 83.969
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "triangular_native",
+      "error": "TypeError: All inputs to triangular_solve must have the same number of batch dimensions, but got [0, 1] batch dimensions for the inputs."
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.04563541698735207,
+      "temporary_bytes": 1179856,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 178.083,
+      "p25_us": 171.04175,
+      "p75_us": 186.0625
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003590830019675195,
+      "temporary_bytes": 131216,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 76.396,
+      "p25_us": 70.4795,
+      "p75_us": 89.36449999999999
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.07009766699047759,
+      "temporary_bytes": 2359712,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 1399.2295,
+      "p25_us": 1386.03125,
+      "p75_us": 1415.8332500000001
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.09649945900309831,
+      "temporary_bytes": 280592,
+      "result_shape": [
+        512
+      ],
+      "median_us": 134.917,
+      "p25_us": 132.48975000000002,
+      "p75_us": 139.166
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.09007637499598786,
+      "temporary_bytes": 280592,
+      "result_shape": [
+        512
+      ],
+      "median_us": 138.77100000000002,
+      "p25_us": 135.958,
+      "p75_us": 147.05175
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.08992358297109604,
+      "temporary_bytes": 280592,
+      "result_shape": [
+        512
+      ],
+      "median_us": 139.312,
+      "p25_us": 136.0,
+      "p75_us": 145.68725
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0002744999947026372,
+      "temporary_bytes": 280592,
+      "result_shape": [
+        512
+      ],
+      "median_us": 140.5625,
+      "p25_us": 136.45875,
+      "p75_us": 147.51024999999998
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.12085475004278123,
+      "temporary_bytes": 428320,
+      "result_shape": [
+        512
+      ],
+      "median_us": 308.125,
+      "p25_us": 298.88575,
+      "p75_us": 320.52099999999996
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.052993416029494256,
+      "temporary_bytes": 139664,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 133.3955,
+      "p25_us": 115.58375000000001,
+      "p75_us": 149.792
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "triangular_native",
+      "error": "ValueError: Batching dimension 0_1 corresponds to two sizes: 1 and 128"
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.04277987498790026,
+      "temporary_bytes": 1180048,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 186.583,
+      "p25_us": 177.8755,
+      "p75_us": 205.97899999999998
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00028149998979642987,
+      "temporary_bytes": 139664,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 129.8125,
+      "p25_us": 116.3235,
+      "p75_us": 147.16625
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.1452800830011256,
+      "temporary_bytes": 2359768,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 1476.687,
+      "p25_us": 1457.0832500000001,
+      "p75_us": 1495.7082500000001
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "public_numpyro",
+      "compile_seconds": 0.0544668750371784,
+      "temporary_bytes": 2244752,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 762.25,
+      "p25_us": 746.9165,
+      "p75_us": 789.21825
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_native",
+      "compile_seconds": 0.0493322080001235,
+      "temporary_bytes": 2244752,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 774.875,
+      "p25_us": 754.55175,
+      "p75_us": 798.65625
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.048388791969046,
+      "temporary_bytes": 2244752,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 768.1875,
+      "p25_us": 747.21875,
+      "p75_us": 784.9065
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0002686670050024986,
+      "temporary_bytes": 2244752,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 769.979,
+      "p25_us": 749.063,
+      "p75_us": 801.6355000000001
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 8,
+      "method": "dense_solve",
+      "compile_seconds": 0.07688679196871817,
+      "temporary_bytes": 3424600,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 2056.6665000000003,
+      "p25_us": 2024.51,
+      "p75_us": 2102.094
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.0719986250041984,
+      "temporary_bytes": 524432,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 230.25,
+      "p25_us": 185.677,
+      "p75_us": 266.23974999999996
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "triangular_native",
+      "error": "ValueError: Batching dimension 0_0 corresponds to two sizes: 1 and 4096"
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.06533841701457277,
+      "temporary_bytes": 17301712,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 908.396,
+      "p25_us": 882.84425,
+      "p75_us": 944.6665
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00032895803451538086,
+      "temporary_bytes": 524432,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 213.2705,
+      "p25_us": 180.92725000000002,
+      "p75_us": 258.70825
+    },
+    {
+      "case": "one_y_many_distributions",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.1008965420187451,
+      "temporary_bytes": 34603424,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 10806.791,
+      "p25_us": 10759.07275,
+      "p75_us": 10881.801749999999
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.06659966701408848,
+      "temporary_bytes": 524432,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 233.10399999999998,
+      "p25_us": 210.927,
+      "p75_us": 263.06225
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "triangular_native",
+      "error": "TypeError: All inputs to triangular_solve must have the same number of batch dimensions, but got [0, 1] batch dimensions for the inputs."
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.06396987498737872,
+      "temporary_bytes": 17301712,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 907.417,
+      "p25_us": 880.6667500000001,
+      "p75_us": 937.1975
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00033837498631328344,
+      "temporary_bytes": 524432,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 218.667,
+      "p25_us": 189.77075,
+      "p75_us": 262.125
+    },
+    {
+      "case": "many_y_one_distribution",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.08521779195871204,
+      "temporary_bytes": 34603424,
+      "result_shape": [
+        4096
+      ],
+      "median_us": 10815.375,
+      "p25_us": 10774.01075,
+      "p75_us": 10875.417
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.20689212501747534,
+      "temporary_bytes": 4261904,
+      "result_shape": [
+        512
+      ],
+      "median_us": 586.1665,
+      "p25_us": 568.40625,
+      "p75_us": 616.4585
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.1903174999752082,
+      "temporary_bytes": 4261904,
+      "result_shape": [
+        512
+      ],
+      "median_us": 589.0415,
+      "p25_us": 566.7395,
+      "p75_us": 612.7605
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.18662254203809425,
+      "temporary_bytes": 4261904,
+      "result_shape": [
+        512
+      ],
+      "median_us": 582.9375,
+      "p25_us": 564.26,
+      "p75_us": 608.45775
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003180829808115959,
+      "temporary_bytes": 4261904,
+      "result_shape": [
+        512
+      ],
+      "median_us": 586.75,
+      "p25_us": 564.60425,
+      "p75_us": 608.79125
+    },
+    {
+      "case": "aligned_distinct_covariances",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.22051704197656363,
+      "temporary_bytes": 6424864,
+      "result_shape": [
+        512
+      ],
+      "median_us": 2016.208,
+      "p25_us": 1989.44775,
+      "p75_us": 2071.02075
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.1559084170148708,
+      "temporary_bytes": 786704,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 425.95849999999996,
+      "p25_us": 386.948,
+      "p75_us": 496.29175
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "triangular_native",
+      "error": "ValueError: Batching dimension 0_1 corresponds to two sizes: 1 and 128"
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.14809491601772606,
+      "temporary_bytes": 17432848,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 920.0625,
+      "p25_us": 896.958,
+      "p75_us": 951.2605
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.0003180410130880773,
+      "temporary_bytes": 786704,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 418.58349999999996,
+      "p25_us": 380.28125,
+      "p75_us": 445.66675
+    },
+    {
+      "case": "all_pairs_shared_covariance",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.19149366597412154,
+      "temporary_bytes": 34603480,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 11107.854,
+      "p25_us": 11049.875,
+      "p75_us": 11196.86475
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "public_numpyro",
+      "compile_seconds": 0.11430808302247897,
+      "temporary_bytes": 34095248,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 3859.375,
+      "p25_us": 3828.427,
+      "p75_us": 3934.45875
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_native",
+      "compile_seconds": 0.14520258299307898,
+      "temporary_bytes": 34095248,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 3707.1040000000003,
+      "p25_us": 3610.07325,
+      "p75_us": 3857.7815
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "triangular_broadcast",
+      "compile_seconds": 0.14469095796812326,
+      "temporary_bytes": 34095248,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 3709.5834999999997,
+      "p25_us": 3612.4165000000003,
+      "p75_us": 3881.2709999999997
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "outer_vmap",
+      "compile_seconds": 0.00036308402195572853,
+      "temporary_bytes": 34095248,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 3680.2495,
+      "p25_us": 3598.167,
+      "p75_us": 3825.5625
+    },
+    {
+      "case": "all_pairs_distinct_covariances",
+      "dimension": 32,
+      "method": "dense_solve",
+      "compile_seconds": 0.19125987496227026,
+      "temporary_bytes": 51396952,
+      "result_shape": [
+        32,
+        128
+      ],
+      "median_us": 13787.167,
+      "p25_us": 13657.354,
+      "p75_us": 13936.135
+    }
+  ]
+}
