@@ -7,7 +7,6 @@ from collections.abc import Callable
 from typing import Literal
 
 import jax.numpy as jnp
-import jax.scipy as jsp
 import numpy as np
 import numpyro.distributions as dist
 from jax.errors import TracerArrayConversionError, TracerBoolConversionError
@@ -253,8 +252,8 @@ def assemble_completed_observations(
 
 def _masked_multivariate_normal_log_prob(
     obs_dist: dist.MultivariateNormal,
-    y: Real[Array, " observation_dim"],
-    obs_mask: Bool[Array, " observation_dim"],
+    y: Real[Array, "*value_batch observation_dim"],
+    obs_mask: Bool[Array, "*mask_batch observation_dim"],
 ) -> Real[Array, "*log_prob_batch"]:
     """Evaluate the observed marginal of a multivariate Normal distribution.
 
@@ -264,27 +263,30 @@ def _masked_multivariate_normal_log_prob(
 
     Args:
         obs_dist: Multivariate Normal observation distribution.
-        y: One filled observation vector.
-        obs_mask: Boolean vector with `True` at observed components.
+        y: Observation vectors with broadcastable leading dimensions.
+        obs_mask: Component masks with broadcastable leading dimensions.
 
     Returns:
         Array: Log probability of the observed components, retaining
             distribution batch axes.
     """
     mask_f = obs_mask.astype(obs_dist.loc.dtype)
-    residual = (y - obs_dist.loc) * mask_f
+    residual = jnp.where(obs_mask, y - obs_dist.loc, 0)
     cov = obs_dist.covariance_matrix
-    mask_outer = mask_f[:, None] * mask_f[None, :]
-    masked_cov = cov * mask_outer + jnp.diag(1.0 - mask_f)
+    observation_dim = obs_dist.event_shape[0]
+    mask_outer = mask_f[..., :, None] * mask_f[..., None, :]
+    masked_cov = cov * mask_outer + (
+        jnp.eye(observation_dim, dtype=cov.dtype) * (1.0 - mask_f)[..., None, :]
+    )
 
-    chol = jnp.linalg.cholesky(masked_cov)
-    whitened = jsp.linalg.solve_triangular(chol, residual[..., None], lower=True)[
-        ..., 0
-    ]
-    quad = jnp.sum(whitened**2, axis=-1)
-    logdet = 2.0 * jnp.sum(jnp.log(jnp.diagonal(chol, axis1=-2, axis2=-1)), axis=-1)
-    n_obs = jnp.sum(mask_f)
-    return -0.5 * (quad + logdet + n_obs * LOG_2PI)
+    # NumPyro groups broadcast residuals into multiple right-hand sides of
+    # its triangular solve, preserving shared Cholesky factors.
+    masked_normal = dist.MultivariateNormal(
+        jnp.zeros(observation_dim, dtype=residual.dtype),
+        covariance_matrix=masked_cov,
+    )
+    n_missing = observation_dim - jnp.sum(mask_f, axis=-1)
+    return masked_normal.log_prob(residual) + 0.5 * n_missing * LOG_2PI
 
 
 def _lift_scalar_observation_distribution(
@@ -657,8 +659,8 @@ def probe_observation_distribution_contract(
 def masked_observation_log_prob(
     obs_dist: dist.Distribution,
     *,
-    y: Real[Array, " observation_dim"] | Real[Array, ""],
-    obs_mask: Bool[Array, " observation_dim"] | Bool[Array, ""],
+    y: Real[Array, "*value_shape"],
+    obs_mask: Bool[Array, "*mask_shape"],
 ) -> Real[Array, "*log_prob_batch"]:
     """Evaluate the marginal log density of observed components.
 
@@ -668,13 +670,19 @@ def masked_observation_log_prob(
 
     Args:
         obs_dist: Scalar or vector observation distribution.
-        y: One observation, broadcast over distribution batch axes. Values
-            at missing components are ignored and may be NaN.
-        obs_mask: Boolean mask matching `y`, with `True` at observed components.
+        y: Values whose trailing dimensions match the scalar or vector event.
+            Leading dimensions broadcast with the distribution batch and mask.
+            Missing components are ignored and may be NaN.
+        obs_mask: Boolean component masks, with `True` at observed components.
+            Event dimensions must match `y`; leading dimensions may broadcast.
 
     Returns:
-        Array: Observed-marginal log density, retaining distribution batch
-            axes. A fully missing observation contributes zero.
+        Array: Observed-marginal log density over the broadcast leading
+            dimensions. A fully missing observation contributes zero.
+
+    For a distribution batch `(N,)` with vector events `(D,)`, values shaped
+    `(D,)` score one observation against every distribution; `(N, D)` scores
+    aligned pairs; `(M, 1, D)` scores all observation/distribution pairs.
 
     Raises:
         ValueError: If `y` and `obs_mask` do not match the scalar or vector
@@ -682,27 +690,30 @@ def masked_observation_log_prob(
         RuntimeError: If unsupported partial marginalization is detected
             during JIT execution.
     """
-    values = jnp.atleast_1d(jnp.asarray(y))
-    mask = jnp.atleast_1d(jnp.asarray(obs_mask))
+    values = jnp.asarray(y)
+    mask = jnp.asarray(obs_mask)
     event_shape = tuple(obs_dist.event_shape)
-    if (
-        values.ndim != 1
-        or values.shape != (event_shape or (1,))
-        or mask.shape != values.shape
+    if len(event_shape) > 1 or (
+        event_shape
+        and (values.shape[-1:] != event_shape or mask.shape[-1:] != event_shape)
     ):
         raise ValueError(
-            "y and obs_mask must match the scalar or vector observation event shape."
+            "y and obs_mask must end in the scalar or vector observation event shape."
         )
+    event_ndim = len(event_shape)
+    value_batch = values.shape[: values.ndim - event_ndim]
+    mask_batch = mask.shape[: mask.ndim - event_ndim]
+    jnp.broadcast_shapes(value_batch, mask_batch, obs_dist.batch_shape)
     values = jnp.where(mask, values, 0)
     if not event_shape:
-        return obs_dist.mask(mask[0]).log_prob(values[0])
+        return obs_dist.mask(mask).log_prob(values)
 
     return _masked_observation_log_prob(
         obs_dist,
         y=values,
         obs_mask=mask,
-        row_has_any_observed=jnp.any(mask),
-        observation_dim=values.shape[0],
+        row_has_any_observed=jnp.any(mask, axis=-1),
+        observation_dim=event_shape[0],
         has_partial_missing=False,
         expected_mode=_distribution_mode(obs_dist, has_partial_missing=False),
         expected_event_shape=event_shape,
@@ -712,15 +723,15 @@ def masked_observation_log_prob(
 def _masked_observation_log_prob(
     obs_dist: dist.Distribution,
     *,
-    y: Real[Array, " observation_dim"],
-    obs_mask: Bool[Array, " observation_dim"],
-    row_has_any_observed: Bool[Array, ""],
+    y: Real[Array, "*value_batch observation_dim"],
+    obs_mask: Bool[Array, "*mask_batch observation_dim"],
+    row_has_any_observed: Bool[Array, "*mask_batch"],
     observation_dim: int,
     has_partial_missing: bool,
     expected_mode: ObservationDistributionMode,
     expected_event_shape: tuple[int, ...],
 ) -> Real[Array, "*log_prob_batch"]:
-    """Score only the observed portion of one observation row."""
+    """Score the observed portion of broadcast-compatible observation rows."""
     obs_dist = _canonicalize_observation_distribution(
         obs_dist, observation_dim=observation_dim
     )
@@ -749,10 +760,10 @@ def _masked_observation_log_prob(
             )
 
     if expected_mode == "masked":
-        row_is_partial = row_has_any_observed & ~jnp.all(obs_mask)
+        row_is_partial = row_has_any_observed & ~jnp.all(obs_mask, axis=-1)
         y = _raise_now_or_error_if(
             y,
-            row_is_partial,
+            jnp.any(row_is_partial),
             "Partial missingness currently requires marginalizable "
             "MultivariateNormal observations or factorizable "
             "Independent(..., 1) observations.",
